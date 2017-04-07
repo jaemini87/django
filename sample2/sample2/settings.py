@@ -23,9 +23,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = 'h8$p_7gz8k&6*gw1!q(p15uk#$2#l*8rb^*yh5hy)l@y&5kc43'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [u'www.bettingmillion.com',u'bettingmillion.com',u'ssangcom.pythonanywhere.com']
 
 
 # Application definition
@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'blog',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -117,5 +118,9 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
-
+STATICFILES_DIRS=[
+        os.path.join(BASE_DIR,"static"),
+        "/home/ssangcom/django/static/",
+]
 STATIC_URL = '/static/'
+STATIC_ROOT = '/home/ssangcom/django/static/'

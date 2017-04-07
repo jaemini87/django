@@ -1,0 +1,26 @@
+5
+Team A: Kia Tigers
+Team B: Hanwha Eagles
+Bet Slip: UNDER 8.0
+Odds: 1.862
+Bet Amount: 100.0
+Team A: SK Wyverns
+Team B: NC Dinos
+Bet Slip: OVER 10.5
+Odds: 1.943
+Bet Amount: 100.0
+Team A: Doosan Bears
+Team B: Nexen Heroes
+Bet Slip: OVER 7.5
+Odds: 1.84
+Bet Amount: 100.0
+Team A: KT Wiz Suwon
+Team B: Samsung Lions
+Bet Slip: OVER 11.0
+Odds: 2.06
+Bet Amount: 100.0
+Team A: Lotte Giants
+Team B: LG Twins
+Bet Slip: OVER 11.5
+Odds: 2.05
+Bet Amount: 100.0

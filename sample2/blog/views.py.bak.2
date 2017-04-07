@@ -1,0 +1,64 @@
+from django.shortcuts import render
+from django.http import HttpResponse
+import datetime
+import random
+import django
+import sqlite3 as sql
+import sys
+from datetime import date,timedelta
+from blog.models import Bet
+def current_datetime(request):
+    now = datetime.datetime.now()
+    html = "<html><body>It is now %s.</body></html>" % now
+    return HttpResponse(html)
+# Create your views here.
+def post_list_admin(request):
+    try:
+        fin = open("/home/ssangcom/django/static/blog/computer_picks.txt",'r')
+        num_bets = int(fin.readline())
+    except IOError:
+        num_bets = 0
+    posts = Bet.objects.all()
+    for post in posts:
+        post.delete()
+    for ii in range(0,num_bets):
+        teamA = fin.readline() 
+        teamB = fin.readline() 
+        betSlip = fin.readline() 
+        odds = fin.readline()  
+        betAmount = fin.readline()  
+
+        Bet.objects.create(TeamA=teamA,TeamB=teamB,BetSlip=betSlip,
+                Odds=odds,BetAmount=betAmount)
+        
+    fin.close()
+    posts = Bet.objects.all()
+    for post in posts:
+        post.save()
+    return render(request,'blog/post_list.html',{'posts':posts})
+def post_list(request):
+    try:
+        fin = open("/home/ssangcom/django/static/blog/computer_picks.txt",'r')
+        num_bets = int(fin.readline())
+    except IOError:
+        num_bets = 0
+    posts = Bet.objects.all()
+
+    for post in posts:
+        post.delete()
+    for ii in range(0,num_bets):
+        if ii % 5 < 2:
+            teamA = fin.readline() 
+            teamB = fin.readline() 
+            betSlip = fin.readline() 
+            odds = fin.readline()  
+            betAmount = fin.readline()  
+
+            Bet.objects.create(TeamA=teamA,TeamB=teamB,BetSlip=betSlip,
+                    Odds=odds,BetAmount=betAmount)
+        
+    fin.close()
+    posts = Bet.objects.all()
+    for post in posts:
+        post.save()
+    return render(request,'blog/post_list.html',{'posts':posts})

@@ -1,0 +1,21 @@
+4
+Team A: Jeonju KCC Egis
+Team B: Orions
+Bet Slip: Jeonju KCC Egis 6.5
+Odds: 2.03
+Bet Amount: 1000.0
+Team A: Jeonju KCC Egis
+Team B: Orions
+Bet Slip: OVER 158.5
+Odds: 2.03
+Bet Amount: 1000.0
+Team A: Incheon Elephants
+Team B: Samsung Thunders
+Bet Slip: UNDER 159.5
+Odds: 1.917
+Bet Amount: 1000.0
+Team A: Incheon Elephants
+Team B: Samsung Thunders
+Bet Slip: Incheon Elephants
+Odds: 1.952
+Bet Amount: 1000.0

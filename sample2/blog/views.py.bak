@@ -1,0 +1,344 @@
+from django.shortcuts import render
+#from pylab import figure, axes, pie, title
+from django.http import HttpResponse
+import datetime
+import random
+import django
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
+from matplotlib.dates import DateFormatter
+import matplotlib.patches as patches
+import matplotlib.pyplot as plt
+import matplotlib.gridspec as gridspec
+import matplotlib
+import numpy as np
+import sortedcontainers
+import math
+import sqlite3 as sql
+import sys
+from datetime import date,timedelta
+import struct
+import re
+import operator
+from blog.models import Post
+def current_datetime(request):
+    now = datetime.datetime.now()
+    html = "<html><body>It is now %s.</body></html>" % now
+    return HttpResponse(html)
+# Create your views here.
+def post_list(request):
+    fin = open("/home/ssangcom/django/static/blog/computer_picks.txt",'r')
+    num_bets = int(fin.readline())
+    for ii in range(0,num_bets):
+        teamA = fin.readline() 
+        teamB = fin.readline() 
+        betSlip = fin.readline() 
+        odds = fin.readline()  
+        betAmount = fin.readline()  
+
+        Post.objects.create(TeamA=teamA,TeamB=teamB,BetSlip=betSlip,
+                Odds=odds,BetAmount=betAmount)
+    fin.close()
+    posts = Post.objects()
+    return render(request,'blog/post_list.html',{})
+def simple(request):
+    fig=Figure()
+    ax=fig.add_subplot(211)
+    ax2=fig.add_subplot(212)
+    x=[]
+    y=[]
+    now=datetime.datetime.now()
+    delta=datetime.timedelta(days=1)
+    for i in range(30):
+        x.append(now)
+        now+=delta
+        y.append(random.randint(0, 1000))
+    ax.plot_date(x, y, '-')
+    ax.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d'))
+    ax2.plot_date(x, y, '-')
+    ax2.xaxis.set_major_formatter(DateFormatter('%Y-%m-%d'))
+    fig.autofmt_xdate()
+    canvas=FigureCanvas(fig)
+    response=django.http.HttpResponse(content_type='image/png')
+    canvas.print_png(response)
+    return response
+
+def get_league_name(sportsid,leagueid):
+    """
+    for ii in range(0,len(selected_db_ids[sportsid])):
+        if leagueid == selected_db_ids[sportsid][ii][0]:
+            return selected_db_ids[sportsid][ii][1]
+    return "None"
+    """
+    ids = sportsid*leagueid
+    if ids == 3*246:
+        return "MLB"
+    elif ids == 3*6227:
+        return "KBO"
+    elif ids == 3*187703:
+        return "NPB"
+    elif ids == 4*487:
+        return "NBA"
+    elif ids == 4*482 or ids == 4*481:
+        return "KBL&WKBL"
+    elif sportsid == 4:
+        return "Basketball"
+    elif sportsid == 33:
+        return "Tennis"
+    elif sportsid == 29:
+        return "Soccer"
+    elif sportsid == 15:
+        return "Football"
+    elif sportsid == 34:
+        return "Volleyball"
+    else:
+        return "Etc"
+    ###################################
+    if sportsid == 19:
+        return "Hockey"
+    elif sportsid == 3:
+        return "Baseball"
+    elif ids == 4*482:
+        return "KBL"
+    elif ids == 4*481:
+        return "WKBL"
+    elif ids == 29*1980:
+        return "Premier League"
+    elif ids == 29*1842:
+        return "Bundasliga"
+    elif ids == 29*2436:
+        return "Seria A"
+    elif ids == 15*889:
+        return "NFL"
+    elif ids == 34*4147:
+        return "KOVO"
+    elif ids == 34*4146:
+        return "WKOVO"
+    pass
+def plus_date(date_1,day_plus):
+    y1,m1,d1 = date_1.split("-")
+    day = timedelta(days=1)
+    date1 = date(int(y1),int(m1),int(d1))
+    r_date = date1+day_plus*day
+    if date.today() < date1+day_plus*day:
+        return (date.today()+timedelta(days=1)).isoformat()
+    else:
+        return str(r_date)
+def dict_safe_cum_set(dict_a,key,value):
+    if dict_a.__contains__(key):
+        dict_a[key] += value
+    else:
+        dict_a[key] = value
+    pass
+def gen_graph(request):
+    matplotlib.use('Agg')
+    db_File = "/home/ssangcom/django/sample2/bank_management_pin_admin.db"
+    conn = sql.connect(db_File)
+    cur = conn.cursor()
+    num_games = 30
+
+    #placedAt 20
+    #2016-10-08T04
+    #winLoss 8
+    #betStatus 14
+    #price = odds = 19
+
+    cur.execute("select * from pinnacle")
+
+    winLoss_list_sum=[]
+    winLoss_list_xlabel=[]
+    betStatus_list=[]
+    leagueDict=dict()
+    leagueDict_sorted_xlabel=[]
+    win_dict=dict()
+    print sys.getdefaultencoding()
+    time_zone = dict()
+    time_zone[3*6227] = 12
+    time_zone[3*187703] = 12
+    time_zone[4*482] = 12
+    time_zone[34*4147] = 12
+    time_zone[34*4146] = 12
+    time_zone[33] = 5
+    winOdds_list = []
+    loseOdds_list = []
+    invest = 0.0
+    win_sportsid_dict = dict()
+    count_sportsid_dict = dict()
+    win_date_dict = dict()
+    count_date_dict = dict()
+    for fetch in reversed(cur.fetchall()):
+        day_n = timedelta(days=1)
+        temp_result=0.0
+        str_date = str(fetch[20][0:10])
+        num_time = int(fetch[20][11:13])
+        sportsId = int(fetch[6])
+        leagueId = int(fetch[22])
+        volumn = abs(float(fetch[17]))
+        team_h = re.sub(r'[^\x00-\x7f]',r' ',fetch[3])
+        team_a = re.sub(r'[^\x00-\x7f]',r' ',fetch[12])
+        league_name = get_league_name(sportsId,leagueId)
+        if time_zone.__contains__(sportsId*leagueId):
+            if num_time > 12 :
+                str_date = plus_date(str_date,1)
+        elif time_zone.__contains__(sportsId):
+            if num_time > 3:
+                str_date = plus_date(str_date,1)
+        else:
+            if num_time > 7:
+                str_date = plus_date(str_date,1)
+        year,month,day = str_date.split("-")
+        num_date = int(year)*10000+int(month)*100+int(day)
+        date1 = date(int(year),int(month),int(day))
+        weekday_str_index = (date1.weekday()+1)%7
+        #print fetch
+        if date.today() > date1 + (int(num_games)+1)*day_n:
+            continue
+        if fetch[14].find("WON") != -1:
+            temp_result = abs(float(fetch[15]))
+            temp_ratio = 1
+            if fetch[19] < 1.0:
+              winOdds_list.append(float(fetch[15])/float(fetch[17]))
+            else:
+              winOdds_list.append(float(fetch[19]))
+            dict_safe_cum_set(win_date_dict,num_date,1.0)
+            dict_safe_cum_set(win_sportsid_dict,league_name,1.0)
+        elif fetch[14].find("LOSE") !=- 1:
+            temp_result = -1*abs(float(fetch[17]))
+            temp_ratio = -1
+            if fetch[19] < 1.0:
+                loseOdds_list.append(float(fetch[15])/float(fetch[17]))
+            else:
+                loseOdds_list.append(float(fetch[19]))
+        else:
+            continue
+        dict_safe_cum_set(count_date_dict,num_date,1.0)
+        dict_safe_cum_set(count_sportsid_dict,league_name,1.0)
+        dict_safe_cum_set(win_dict,num_date,temp_result)
+        dict_safe_cum_set(leagueDict,league_name,temp_result)
+        invest += float(fetch[17])
+    leagueDict_sorted = map(lambda (k,v):v,sorted(leagueDict.iteritems(),key=operator.itemgetter(1)))
+    leagueDict_sorted_xlabel = map(lambda (k,v):k,sorted(leagueDict.iteritems(),key=operator.itemgetter(1)))
+    if len(leagueDict_sorted_xlabel) > 20:
+        for ii in range(0,len(leagueDict_sorted_xlabel)-20):
+            leagueDict_sorted.__delitem__(10)
+            leagueDict_sorted_xlabel.__delitem__(10)
+    winLoss_list = map(lambda (k,v):v,sorted(win_dict.iteritems(),key=operator.itemgetter(0)))
+    winLoss_list_xlabel = map(lambda (k,v):k,sorted(win_dict.iteritems(),key=operator.itemgetter(0)))
+    
+    winLoss_list_sum = np.cumsum(winLoss_list)
+    num_games_itr = [ii for ii in range(0,len(winLoss_list_sum))]
+
+    
+    fin_picks = open("/home/ssangcom/django/sample2/computer_picks.txt","r")
+    num_bets = min( int(fin_picks.readline()),3)
+    
+    #Fig = plt.figure(figsize=(12,12),dpi=75)
+    #Fig1 = plt.subplot2grid((2,2),(0,0),colspan=2)
+    #Fig2 = plt.subplot2grid((2,2),(1,0),colspan=2)
+    Fig1_size = 3
+    Fig2_size = 3
+    Fig3_size = num_bets+2
+    Fig = Figure(figsize=(10,Fig1_size+Fig2_size+Fig3_size))
+    gs = gridspec.GridSpec(3,1,height_ratios=[Fig1_size,Fig2_size,Fig3_size])
+    Fig1 = Fig.add_subplot(gs[0])
+    Fig2 = Fig.add_subplot(gs[1])
+    Fig3 = Fig.add_subplot(gs[2])
+    Fig1.plot(num_games_itr,winLoss_list_sum,'g-',label='EV $',linewidth=3)
+    Fig1.set_xticks(num_games_itr)
+    Fig1.set_xticklabels(winLoss_list_xlabel,rotation=45,fontsize=8,ha='right')
+    #p = patches.Rectangle((left,bottom),width,height,fill=False,transform=Fig1.transAxes,clip_on=False)
+    #Fig1.add_patch(p)
+    Fig1_text = "ROI: "+str(int((sum(winLoss_list)/invest*1000))/10.0)+"%\n"+"Wins: "+str(int(winLoss_list_sum[-1]))
+    Fig1.text(0,max(winLoss_list_sum)*0.8,Fig1_text,fontsize=10)
+    fig2_xticks = np.arange(len(leagueDict_sorted_xlabel))
+    Fig2.bar(fig2_xticks,leagueDict_sorted,align='center')
+    Fig2.set_xticks(fig2_xticks)
+    Fig2.set_xticklabels(leagueDict_sorted_xlabel,rotation=45,fontsize=10,ha='right')
+    
+    #bin_centers = 0.5*np.diff(num_games_itr)+num_games_itr[:-1]
+    #for count,x in zip():
+    for ii in range(0,len(num_games_itr)):
+	annx1 = str(int(win_date_dict[winLoss_list_xlabel[ii]]))+"/"+str(int(count_date_dict[winLoss_list_xlabel[ii]]))
+	annx11 = str(str(int(win_date_dict[winLoss_list_xlabel[ii]]/count_date_dict[winLoss_list_xlabel[ii]]*1000)/10)+"%")
+	Fig1.annotate(annx1,xy=(ii-0.5,0),xycoords=('data','axes fraction'),
+	    xytext=(0,-48),textcoords='offset points',va='top',ha='center',fontsize=8)
+	Fig1.annotate(annx11,xy=(ii-0.5,0),xycoords=('data','axes fraction'),
+	    xytext=(0,-64),textcoords='offset points',va='top',ha='center',fontsize=10)
+    for ii in range(0,len(fig2_xticks)):
+	annx2 = str(int(win_sportsid_dict[leagueDict_sorted_xlabel[ii]]))+"/"+str(int(count_sportsid_dict[leagueDict_sorted_xlabel[ii]]))
+	annx22 = str(str(int(win_sportsid_dict[leagueDict_sorted_xlabel[ii]]/count_sportsid_dict[leagueDict_sorted_xlabel[ii]]*1000)/10)+"%")
+	Fig2.annotate(annx2,xy=(ii,0),xycoords=('data','axes fraction'),
+	    xytext=(0,-48),textcoords='offset points',va='top',ha='center',fontsize=10)
+	Fig2.annotate(annx22,xy=(ii,0),xycoords=('data','axes fraction'),
+	    xytext=(0,-64),textcoords='offset points',va='top',ha='center',fontsize=10)
+
+#    Fig1.annotate() # wins / loses \n win ratio
+
+ #   Fig2.annotate() # wins / loses \n win ratio
+  #Fig.subplots_adjust(bottom=0.0)
+    Fig1.grid()
+    Fig2.grid()
+
+    mpl_blue_rvb = (191./255.,209./256.,212./255.)
+    mpl_orange_rvb = (202./255.,121./256.,0./255.)
+    mpl_grey_rvb = (51./255.,51./256.,51./255.)
+    
+    Fig3.set_xlim(0.,1.)
+    Fig3.set_ylim(0.,1.)
+    Fig3.set_title("Sanchez Computer Picks")
+    """ 
+    Fig1_ylim = max(winLoss_list_sum)-min(winLoss_list_sum)
+    Fig2_ylim = max(leagueDict_sorted)-min(leagueDict_sorted)
+    line_axesfrac1 = Fig1_ylim/6.0
+    line_axesfrac2 = Fig2_ylim/6.0
+    for itr in range(0,6):
+        baseline1 = Fig1_ylim -  itr*line_axesfrac1
+        baseline2 = Fig2_ylim -  itr*line_axesfrac2
+        baseline_next1 = baseline1 - line_axesfrac1*1.
+        baseline_next2 = baseline2 - line_axesfrac2*1.
+        fill_color = ['white',mpl_blue_rvb][itr%2]
+        Fig1.fill_between([min(num_games_itr),max(num_games_itr)],[baseline1,baseline1],[baseline_next1,baseline_next1],
+            color=fill_color,alpha=0.5)
+        Fig2.fill_between([0,len(fig2_xticks)],[baseline2,baseline2],[baseline_next2,baseline_next2],
+            color=fill_color,alpha=0.5)
+    """
+    num_bets += 1
+    line_axesfrac = (1./(num_bets))
+    for itr in range(0,num_bets):
+        str_bets = ""
+        baseline = 1. - itr*line_axesfrac
+        baseline_next = baseline - line_axesfrac*1.
+        fill_color = ['white',mpl_blue_rvb][itr%2]
+        total_hits = -1
+        total_hits_today = -1
+#        total_hits = hitcount.views.HitCountMixin.hit_count()
+        """
+        my_hitmodel = HitModel.objects.get(pk=1)
+        total_hits = my_hitmodel.hit_count.hits
+        total_hits_today = my_hitmodel.hit_count.hits_in_last(days=1)
+        """
+        if itr == num_bets - 1:
+#            str_bets = "Total Hits: "+str(total_hits)+ "\nToday Hits: "+str(total_hits_today)
+            str_bets += "\nFor more information\nKaKaoTalk: Sanchezzz\nVisit blog: http://bettingmillion.blogspot.com\nContact info: ssangcom.max@gmail.com "
+        else:
+            for ii in range(0,5):
+                temp_str = fin_picks.readline()
+                str_bets += temp_str[:-2]+"\n"
+        Fig3.fill_between([0.,1.],[baseline,baseline],[baseline_next,baseline_next],
+            color=fill_color,alpha=0.5)
+        annotate_y = baseline-line_axesfrac+line_axesfrac*.08
+        if annotate_y < 0.0:
+            annotate_y = line_axesfrac*.08
+        Fig3.annotate(str_bets[:-1],xy=(.1,annotate_y),xycoords='data',color=mpl_grey_rvb,fontsize=9)
+        Fig3.text(0.1,annotate_y,"\nSanchez Sports Analysis",fontsize=30,color='gray',alpha=0.3)
+    Fig3.set_xticklabels([])
+    Fig3.set_yticklabels([])
+    Fig1.text(0.1,max(winLoss_list_sum)/2,"Sanchez Sports Analysis",fontsize=30,color='gray',alpha=0.3)
+    Fig2.text(0.1,max(leagueDict_sorted)/2,"Sanchez Sports Analysis",fontsize=30,color='gray',alpha=0.3)
+    Fig.tight_layout(pad=2.5)
+    canvas=FigureCanvas(Fig)
+    response=django.http.HttpResponse(content_type='image/png')
+    canvas.print_png(response)
+    return response
+
+
